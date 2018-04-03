@@ -1,7 +1,6 @@
 # -*- coding:utf-8 -*-
 import scrapy
 import requests
-import re
 from worldbank.items import WorldBankItem
 
 
@@ -15,47 +14,44 @@ class WorldBankSpider(scrapy.Spider):
     # excel_url = "http://api.worldbank.org/v2/zh"
     excel_url = "http://api.worldbank.org/v2/en"
 
-    # output_path = './test.xls'
-
     # start_url = 'http://data.worldbank.org.cn/indicator?tab=all' #世界银行——中文——获取指标
     start_url = 'http://data.worldbank.org/indicator?tab=all'  # 世界银行——英文——获取指标
 
     def start_requests(self):
         yield scrapy.Request(url=self.start_url, callback=self.parse_urls)
 
+    # 获取世界银行所有指标，并且进行url拼凑，再对获得的url进行请求，从而下载excel文件
     def parse_urls(self, response):
         item = WorldBankItem()
         selector = scrapy.Selector(response)
 
-        indicators = selector.xpath('//*[@id="main"]/div[2]')
-        indi_url = indicators.xpath('section[@class="nav-item"]/ul/li/a/@href').extract()
-        # indi = re.findall(r'/indicator/.*/?view=chart', indicators, re.S)
-        indi_name = indicators.xpath('section[@class="nav-item"]/ul/li/a/text()').extract()
+        indicators = selector.xpath('//*[@id="main"]/div[2]/section[@class="nav-item"]/ul/li')
 
-        for each in indi_url:
-            each = each[:-10] + "downloadformat=excel"
-            # i.replace("view=chart", "downloadformat=excel") #使用replace进行替换时总是不成功，有待探索！
-            item['indi_url'] = each
-            print("indi_url", item['indi_url'])
-            yield item
-            yield scrapy.Request(url="http://api.worldbank.org/v2/en" + each,
-                                 callback=self.download_excel)
+        for i in indicators:
+            temp_url = i.xpath('a/@href').extract()  # 得到的结果为list
+            # indi_url = str(temp_url)[:-12] + "downloadformat=excel"
+            indi_url = str(temp_url).replace("view=chart", "downloadformat=excel")
+            item["indi_url"] = indi_url.replace("'", "").replace("[", "").replace("]", '')
+            # print('item["indi_url"]:', item["indi_url"])
 
-        for each in indi_name:
-            print("indi_name:", each)
-            item['indi_name'] = each
-            # self.filenames = indi_name
+            indi_name = i.xpath('a/text()').extract()
+            item["indi_name"] = str(indi_name)
+            # print('item["indi_name"]:', item["indi_name"])
             yield item
 
+            url = indi_url.replace("'", "").replace("[", "").replace("]", '')
+            yield scrapy.Request(url="http://api.worldbank.org/v2/en" + url, callback=self.download_excel)
 
+    # 下载excel文件
     def download_excel(self, response):
-        # item=response.meta['item']
-        name_temp = response.url.split("/")[-1]
-        name = name_temp.split("?")[-2]
-        print("storename:", name, '-', response.url)
-        filename = r"D:\workspace\scrapy\worldbank\worldbankexcelfiles\%s.xls" % name
+        # print("url:", response.url)
+        file_name_temp = response.url.split("/")[-1]
+        file_name = file_name_temp.split("?")[-2]
+        # print("file_name:", file_name)  # 存储的文件名称
+        filename_location = r"D:\workspace\scrapy\caas\files\worldbankexcelfiles\%s.xls" % file_name
+
         resp = requests.get(response.url)
-        output = open(filename, 'wb')
+        output = open(filename_location, "wb")
         output.write(resp.content)
         output.close()
         return None

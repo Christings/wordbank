@@ -6,6 +6,7 @@
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
 from worldbank.db.mysql import Mysql
 from worldbank.items import WorldBankItem
+import pymysql
 
 
 class WorldbankPipeline(object):
@@ -16,7 +17,8 @@ class WorldbankPipeline(object):
                 pass
             else:
                 newsql = "insert into worldbank_indi(indi_url,indi_name)values('%s','%s')" % (
-                    item['indi_url'], item['indi_name'])
+                    item['indi_url'], pymysql.escape_string(item['indi_name']))
+                # pymysql.escapy_string--去除转义字符的问题
                 print(newsql)
                 mysql.ExecNoQuery(newsql.encode('utf-8'))
         else:
