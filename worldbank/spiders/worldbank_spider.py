@@ -32,10 +32,6 @@ class WorldBankSpider(scrapy.Spider):
         # indi = re.findall(r'/indicator/.*/?view=chart', indicators, re.S)
         indi_name = indicators.xpath('section[@class="nav-item"]/ul/li/a/text()').extract()
 
-
-
-
-
         for each in indi_url:
             each = each[:-10] + "downloadformat=excel"
             # i.replace("view=chart", "downloadformat=excel") #使用replace进行替换时总是不成功，有待探索！
@@ -57,9 +53,9 @@ class WorldBankSpider(scrapy.Spider):
         name_temp = response.url.split("/")[-1]
         name = name_temp.split("?")[-2]
         print("storename:", name, '-', response.url)
-        filename = r"D:\workspace\scrapy\saas\worldbankexcelfiles\%s.xls" % name
+        filename = r"D:\workspace\scrapy\worldbank\worldbankexcelfiles\%s.xls" % name
         resp = requests.get(response.url)
         output = open(filename, 'wb')
         output.write(resp.content)
         output.close()
-        yield None
+        return None

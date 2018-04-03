@@ -11,7 +11,7 @@ from worldbank.items import WorldBankItem
 class WorldbankPipeline(object):
     def process_item(self, item, spider):
         if isinstance(item, WorldBankItem):
-            mysql = Mysql(host='localhost', user='root', pwd='421498', db='saas')
+            mysql = Mysql(host='localhost', user='root', pwd='421498', db='worldbank')
             if len(item['indi_name']) == 0:
                 pass
             else:
